@@ -8,23 +8,23 @@ class Hclaro < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/botopsy/hclaro/releases/download/v0.1.0-beta.5/hclaro_0.1.0-beta.5_darwin_arm64.tar.gz"
-      sha256 "b0a79c8b3dd8c86a53bdcadfa491ef1b6985986fc6117225232c898749e9890d"
+      url "https://github.com/botopsy/hclaro/releases/download/v1.0.0/hclaro_1.0.0_darwin_arm64.tar.gz"
+      sha256 "7a5b55b411423c02032158b0af798e36bcfab733a610c84e52183384f9d23869"
     end
     on_intel do
-      url "https://github.com/botopsy/hclaro/releases/download/v0.1.0-beta.5/hclaro_0.1.0-beta.5_darwin_amd64.tar.gz"
-      sha256 "1d192bfd3d5570f51b0e8c8d71eb87631a26aa7a8ec98213c5061f2d78a0089d"
+      url "https://github.com/botopsy/hclaro/releases/download/v1.0.0/hclaro_1.0.0_darwin_amd64.tar.gz"
+      sha256 "a9bdd72530781630e08e50c964a24c257e85f26f0c88c876bf5769fd52b3c3af"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/botopsy/hclaro/releases/download/v0.1.0-beta.5/hclaro_0.1.0-beta.5_linux_arm64.tar.gz"
-      sha256 "31a7b7b42339ddcbe590ad25ddcf840e90b1fa305c95079a465b420d87fe66ac"
+      url "https://github.com/botopsy/hclaro/releases/download/v1.0.0/hclaro_1.0.0_linux_arm64.tar.gz"
+      sha256 "14f091d1495e911afd5c335c1619377f344da6c1fe9c511e4341831da661839f"
     end
     on_intel do
-      url "https://github.com/botopsy/hclaro/releases/download/v0.1.0-beta.5/hclaro_0.1.0-beta.5_linux_amd64.tar.gz"
-      sha256 "f0bd12a1006b20750149867dc68ec8ddcff9d45506d3c4ad277d00be86ed76f4"
+      url "https://github.com/botopsy/hclaro/releases/download/v1.0.0/hclaro_1.0.0_linux_amd64.tar.gz"
+      sha256 "e5f282f60d86186364a8b898f6235c4326469a19a2d67c74673cb77531e7f306"
     end
   end
 
