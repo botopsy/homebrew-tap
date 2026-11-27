@@ -1,0 +1,87 @@
+name: Formula
+
+# Checks every change to the formula before it can merge. No secrets, read-only token, no
+# pull_request_target: a pull request from a fork runs with the same limits.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Every url exists, is published and matches its sha256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          f=Formula/hclaro.rb
+          urls=$(grep -o 'url "[^"]*"' "$f" | cut -d'"' -f2)
+          shas=$(grep -o 'sha256 "[0-9a-f]*"' "$f" | cut -d'"' -f2)
+          [ "$(echo "$urls" | wc -l)" -eq 4 ] && [ "$(echo "$shas" | wc -l)" -eq 4 ] || { echo "::error::expected four url and four sha256 lines"; exit 1; }
+          paste -d' ' <(echo "$shas") <(echo "$urls") | while read -r sha url; do
+            case "$url" in https://github.com/botopsy/hclaro/releases/download/v*/hclaro_*) ;; *) echo "::error::unexpected url $url"; exit 1;; esac
+            tag=$(echo "$url" | cut -d/ -f8)
+            file=${url##*/}
+            # The version in the file name must be the tag's, and the release must be public and final.
+            case "$file" in "hclaro_${tag#v}_"*) ;; *) echo "::error::$file does not match $tag"; exit 1;; esac
+            state=$(gh api "repos/botopsy/hclaro/releases/tags/$tag" --jq '"\(.draft) \(.prerelease)"')
+            [ "$state" = "false false" ] || { echo "::error::release $tag is not a published final release ($state)"; exit 1; }
+            got=$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)
+            [ "$got" = "$sha" ] || { echo "::error::$file sha256 is $got, formula has $sha"; exit 1; }
+            echo "ok $file"
+          done
+          # One version across the four urls.
+          [ "$(echo "$urls" | cut -d/ -f8 | sort -u | wc -l)" -eq 1 ] || { echo "::error::urls point at different versions"; exit 1; }
+
+  brew:
+    name: brew (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Put Homebrew on PATH (Linux)
+        if: runner.os == 'Linux'
+        run: echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+      - name: Style, audit, install and test
+        run: |
+          set -euo pipefail
+          brew tap-new --no-git hclaro-test/local
+          brew trust hclaro-test/local || true
+          cp Formula/hclaro.rb "$(brew --repository)/Library/Taps/hclaro-test/homebrew-local/Formula/"
+          brew style hclaro-test/local/hclaro
+          brew audit --strict --online hclaro-test/local/hclaro
+          brew install hclaro-test/local/hclaro
+          brew test hclaro-test/local/hclaro
+          hclaro --version
+
+  formula:
+    name: formula
+    if: always()
+    needs: [verify, brew]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: All formula checks passed
+        run: |
+          [ "${{ needs.verify.result }}" = success ] && [ "${{ needs.brew.result }}" = success ]
